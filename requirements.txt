@@ -1,0 +1,10 @@
+dspy-ai # Main DSPy library
+openai # For embeddings
+python-dotenv # For loading environment variables (optional but good practice)
+wikipedia # For the search tool
+langchain-community
+langchain-openai
+chromadb
+faiss-cpu # Or faiss-gpu if you have CUDA setup, for RAG
+pytest # For running tests
+pytest-timeout # For setting timeouts on tests

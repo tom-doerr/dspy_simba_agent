@@ -1,0 +1,661 @@
+{
+  "react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[0].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[0].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[1].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context directly answers the question, consider whether the answer requires further refinement or additional information before finishing. Before calling `finish`, think about whether the answer is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[1].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nEven if the context provides a direct answer, consider whether the answer needs to be rephrased or expanded upon to meet implicit requirements. Before finalizing the answer, think about whether it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[2].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "DSPy is a framework from Stanford for programming language models, focusing on structure and optimization rather than just prompting.",
+          "Faiss is a library developed by Facebook AI for efficient similarity search and clustering of dense vectors, often used in RAG systems.",
+          "Simba is a prompt optimizer within DSPy that improves agent instructions and few-shot examples based on a metric."
+        ],
+        "question": "Who received the 2022 Nobel Peace Prize?",
+        "trajectory": "[[ ## thought_0 ## ]]\nThe context doesn't contain information about the Nobel Peace Prize. I need to search for this information.\n\n[[ ## tool_name_0 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_0 ## ]]\n{\"query\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_0 ## ]]\n[1] \u00ab2022 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00ab2025 Nobel Peace Prize\u00bb\n[5] \u00ab2024 Nobel Peace Prize\u00bb\n\n[[ ## thought_1 ## ]]\nI should look up the \"2022 Nobel Peace Prize\" page to find out who won.\n\n[[ ## tool_name_1 ## ]]\nlookup_page\n\n[[ ## tool_args_1 ## ]]\n{\"title\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_1 ## ]]\nCould not find a Wikipedia page titled '2022 Nobel Peace Prize'.\n\n[[ ## thought_2 ## ]]\nSince the page \"2022 Nobel Peace Prize\" doesn't exist, I should look up the \"List of Nobel Peace Prize laureates\" page to find the winner for 2022.\n\n[[ ## tool_name_2 ## ]]\nlookup_page\n\n[[ ## tool_args_2 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_2 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_3 ## ]]\nThe provided context from \"List of Nobel Peace Prize laureates\" doesn't directly answer the question of who won the 2022 prize. I need to continue reading the page to find the 2022 laureate. I will use the same tool to get more content from the page.\n\n[[ ## tool_name_3 ## ]]\nlookup_page\n\n[[ ## tool_args_3 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_3 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...",
+        "next_thought": "The context still doesn't contain the answer. I need to search for the 2022 Nobel Peace Prize winner again, but this time I will be more specific in my search query.",
+        "next_tool_name": "search_wikipedia",
+        "next_tool_args": {
+          "query": "who won 2022 Nobel Peace Prize"
+        }
+      }
+    ],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context appears to directly answer the question, consider whether the answer is sufficiently detailed or nuanced. Before using the `finish` tool, evaluate if further exploration using `search_wikipedia` or `lookup_page` could provide a more comprehensive or insightful response. Specifically, if the question is of the form \"What does X combine?\", consider searching for X to see if there are other aspects that should be included in the answer.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[2].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "DSPy is a framework from Stanford for programming language models, focusing on structure and optimization rather than just prompting.",
+          "Faiss is a library developed by Facebook AI for efficient similarity search and clustering of dense vectors, often used in RAG systems.",
+          "Simba is a prompt optimizer within DSPy that improves agent instructions and few-shot examples based on a metric."
+        ],
+        "question": "Who received the 2022 Nobel Peace Prize?",
+        "trajectory": "[[ ## thought_0 ## ]]\nThe context doesn't contain information about the Nobel Peace Prize. I need to search for this information.\n\n[[ ## tool_name_0 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_0 ## ]]\n{\"query\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_0 ## ]]\n[1] \u00ab2022 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00ab2025 Nobel Peace Prize\u00bb\n[5] \u00ab2024 Nobel Peace Prize\u00bb\n\n[[ ## thought_1 ## ]]\nI should look up the \"2022 Nobel Peace Prize\" page to find out who won.\n\n[[ ## tool_name_1 ## ]]\nlookup_page\n\n[[ ## tool_args_1 ## ]]\n{\"title\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_1 ## ]]\nCould not find a Wikipedia page titled '2022 Nobel Peace Prize'.\n\n[[ ## thought_2 ## ]]\nSince the page \"2022 Nobel Peace Prize\" doesn't exist, I should look up the \"List of Nobel Peace Prize laureates\" page to find the winner for 2022.\n\n[[ ## tool_name_2 ## ]]\nlookup_page\n\n[[ ## tool_args_2 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_2 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_3 ## ]]\nThe provided context from \"List of Nobel Peace Prize laureates\" doesn't directly answer the question of who won the 2022 prize. I need to continue reading the page to find the 2022 laureate. I will use the same tool to get more content from the page.\n\n[[ ## tool_name_3 ## ]]\nlookup_page\n\n[[ ## tool_args_3 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_3 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_4 ## ]]\nThe context still doesn't contain the answer. I need to search for the 2022 Nobel Peace Prize winner again, but this time I will be more specific in my search query.\n\n[[ ## tool_name_4 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_4 ## ]]\n{\"query\": \"who won 2022 Nobel Peace Prize\"}\n\n[[ ## observation_4 ## ]]\n[1] \u00ab2024 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00abList of female Nobel laureates\u00bb\n[5] \u00ab2023 Nobel Peace Prize\u00bb",
+        "reasoning": "The previous searches did not directly provide the answer. I will now look up the \"List of Nobel Peace Prize laureates\" page again, hoping to find a section listing the winners by year.",
+        "answer": "The 2022 Nobel Peace Prize was awarded to Ales Bialiatski, the Russian human rights organization Memorial, and the Ukrainian human rights organization Center for Civil Liberties."
+      }
+    ],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nAfter extracting an answer from the context, evaluate its completeness and relevance to the question. If the answer seems too simplistic or lacks depth, consider whether additional information from external sources (e.g., Wikipedia) could enhance the response. Do not just blindly return the answer from the context; instead, critically assess its quality.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[3].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context directly answers the question, consider whether the answer requires further refinement or additional information before finishing. Before calling `finish`, think about whether the answer is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.\n\nIf the initial context is irrelevant to the question, and the first search query returns a list of potentially relevant pages, prioritize looking up the most specific page first. If looking up a page like 'List of Nobel Peace Prize laureates' doesn't directly answer the question, avoid repeatedly looking up the same page. Instead, refine the search query with more specific keywords related to the question and the information already gathered. For example, if the question is about the 2022 Nobel Peace Prize, and the 'List of Nobel Peace Prize laureates' page doesn't provide the answer, search for '2022 Nobel Peace Prize winners' or 'who won the 2022 Nobel Peace Prize'.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "candidate_programs[3].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nEven if the context provides a direct answer, consider whether the answer needs to be rephrased or expanded upon to meet implicit requirements. Before finalizing the answer, think about whether it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.\n\nEven if the tool provides the same initial paragraph repeatedly, try to extract relevant information from the context and previous observations. If the answer is not directly available, consider rephrasing the question or using more specific keywords in the search query to narrow down the results. Before finalizing the answer, ensure that it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[0].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[0].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[1].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context directly answers the question, consider whether the answer requires further refinement or additional information before finishing. Before calling `finish`, think about whether the answer is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[1].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nEven if the context provides a direct answer, consider whether the answer needs to be rephrased or expanded upon to meet implicit requirements. Before finalizing the answer, think about whether it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[2].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "DSPy is a framework from Stanford for programming language models, focusing on structure and optimization rather than just prompting.",
+          "Faiss is a library developed by Facebook AI for efficient similarity search and clustering of dense vectors, often used in RAG systems.",
+          "Simba is a prompt optimizer within DSPy that improves agent instructions and few-shot examples based on a metric."
+        ],
+        "question": "Who received the 2022 Nobel Peace Prize?",
+        "trajectory": "[[ ## thought_0 ## ]]\nThe context doesn't contain information about the Nobel Peace Prize. I need to search for this information.\n\n[[ ## tool_name_0 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_0 ## ]]\n{\"query\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_0 ## ]]\n[1] \u00ab2022 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00ab2025 Nobel Peace Prize\u00bb\n[5] \u00ab2024 Nobel Peace Prize\u00bb\n\n[[ ## thought_1 ## ]]\nI should look up the \"2022 Nobel Peace Prize\" page to find out who won.\n\n[[ ## tool_name_1 ## ]]\nlookup_page\n\n[[ ## tool_args_1 ## ]]\n{\"title\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_1 ## ]]\nCould not find a Wikipedia page titled '2022 Nobel Peace Prize'.\n\n[[ ## thought_2 ## ]]\nSince the page \"2022 Nobel Peace Prize\" doesn't exist, I should look up the \"List of Nobel Peace Prize laureates\" page to find the winner for 2022.\n\n[[ ## tool_name_2 ## ]]\nlookup_page\n\n[[ ## tool_args_2 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_2 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_3 ## ]]\nThe provided context from \"List of Nobel Peace Prize laureates\" doesn't directly answer the question of who won the 2022 prize. I need to continue reading the page to find the 2022 laureate. I will use the same tool to get more content from the page.\n\n[[ ## tool_name_3 ## ]]\nlookup_page\n\n[[ ## tool_args_3 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_3 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...",
+        "next_thought": "The context still doesn't contain the answer. I need to search for the 2022 Nobel Peace Prize winner again, but this time I will be more specific in my search query.",
+        "next_tool_name": "search_wikipedia",
+        "next_tool_args": {
+          "query": "who won 2022 Nobel Peace Prize"
+        }
+      }
+    ],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context appears to directly answer the question, consider whether the answer is sufficiently detailed or nuanced. Before using the `finish` tool, evaluate if further exploration using `search_wikipedia` or `lookup_page` could provide a more comprehensive or insightful response. Specifically, if the question is of the form \"What does X combine?\", consider searching for X to see if there are other aspects that should be included in the answer.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[2].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [
+      {
+        "augmented": true,
+        "context": [
+          "DSPy is a framework from Stanford for programming language models, focusing on structure and optimization rather than just prompting.",
+          "Faiss is a library developed by Facebook AI for efficient similarity search and clustering of dense vectors, often used in RAG systems.",
+          "Simba is a prompt optimizer within DSPy that improves agent instructions and few-shot examples based on a metric."
+        ],
+        "question": "Who received the 2022 Nobel Peace Prize?",
+        "trajectory": "[[ ## thought_0 ## ]]\nThe context doesn't contain information about the Nobel Peace Prize. I need to search for this information.\n\n[[ ## tool_name_0 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_0 ## ]]\n{\"query\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_0 ## ]]\n[1] \u00ab2022 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00ab2025 Nobel Peace Prize\u00bb\n[5] \u00ab2024 Nobel Peace Prize\u00bb\n\n[[ ## thought_1 ## ]]\nI should look up the \"2022 Nobel Peace Prize\" page to find out who won.\n\n[[ ## tool_name_1 ## ]]\nlookup_page\n\n[[ ## tool_args_1 ## ]]\n{\"title\": \"2022 Nobel Peace Prize\"}\n\n[[ ## observation_1 ## ]]\nCould not find a Wikipedia page titled '2022 Nobel Peace Prize'.\n\n[[ ## thought_2 ## ]]\nSince the page \"2022 Nobel Peace Prize\" doesn't exist, I should look up the \"List of Nobel Peace Prize laureates\" page to find the winner for 2022.\n\n[[ ## tool_name_2 ## ]]\nlookup_page\n\n[[ ## tool_args_2 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_2 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_3 ## ]]\nThe provided context from \"List of Nobel Peace Prize laureates\" doesn't directly answer the question of who won the 2022 prize. I need to continue reading the page to find the 2022 laureate. I will use the same tool to get more content from the page.\n\n[[ ## tool_name_3 ## ]]\nlookup_page\n\n[[ ## tool_args_3 ## ]]\n{\"title\": \"List of Nobel Peace Prize laureates\"}\n\n[[ ## observation_3 ## ]]\nThe Norwegian Nobel Committee awards the Nobel Peace Prize annually \"to the person who shall have done the most or the best work for fraternity between nations, for the abolition or reduction of standing armies and for the holding and promotion of peace congresses.\" As dictated by Alfred Nobel's will, the award is administered by the Norwegian Nobel Committee and awarded by a committee of five people elected by the Parliament of Norway.\nEach recipient receives a medal, a diploma, and a monetary ...\n\n[[ ## thought_4 ## ]]\nThe context still doesn't contain the answer. I need to search for the 2022 Nobel Peace Prize winner again, but this time I will be more specific in my search query.\n\n[[ ## tool_name_4 ## ]]\nsearch_wikipedia\n\n[[ ## tool_args_4 ## ]]\n{\"query\": \"who won 2022 Nobel Peace Prize\"}\n\n[[ ## observation_4 ## ]]\n[1] \u00ab2024 Nobel Peace Prize\u00bb\n[2] \u00abList of Nobel Peace Prize laureates\u00bb\n[3] \u00abNobel Peace Prize\u00bb\n[4] \u00abList of female Nobel laureates\u00bb\n[5] \u00ab2023 Nobel Peace Prize\u00bb",
+        "reasoning": "The previous searches did not directly provide the answer. I will now look up the \"List of Nobel Peace Prize laureates\" page again, hoping to find a section listing the winners by year.",
+        "answer": "The 2022 Nobel Peace Prize was awarded to Ales Bialiatski, the Russian human rights organization Memorial, and the Ukrainian human rights organization Center for Civil Liberties."
+      }
+    ],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nAfter extracting an answer from the context, evaluate its completeness and relevance to the question. If the answer seems too simplistic or lacks depth, consider whether additional information from external sources (e.g., Wikipedia) could enhance the response. Do not just blindly return the answer from the context; instead, critically assess its quality.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[3].react_module.react": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nYou will be given `context`, `question` and your goal is to finish with `answer`.\n\nTo do this, you will interleave Thought, Tool Name, and Tool Args, and receive a resulting Observation.\n\nThought can reason about the current situation, and Tool Name can be the following types:\n\n(1) search_wikipedia, whose description is <desc>Search Wikipedia for a query and return a list of relevant page titles.<\/desc>. It takes arguments {'query': {'type': 'string'}} in JSON format.\n(2) lookup_page, whose description is <desc>Look up a specific Wikipedia page by title and return its summary.<\/desc>. It takes arguments {'title': {'type': 'string'}} in JSON format.\n(3) finish, whose description is <desc>Signals that the final outputs, i.e. `answer`, are now available and marks the task as complete.<\/desc>. It takes arguments {'kwargs': {}} in JSON format.\n\nIf the context directly answers the question, consider whether the answer requires further refinement or additional information before finishing. Before calling `finish`, think about whether the answer is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.\n\nIf the initial context is irrelevant to the question, and the first search query returns a list of potentially relevant pages, prioritize looking up the most specific page first. If looking up a page like 'List of Nobel Peace Prize laureates' doesn't directly answer the question, avoid repeatedly looking up the same page. Instead, refine the search query with more specific keywords related to the question and the information already gathered. For example, if the question is about the 2022 Nobel Peace Prize, and the 'List of Nobel Peace Prize laureates' page doesn't provide the answer, search for '2022 Nobel Peace Prize winners' or 'who won the 2022 Nobel Peace Prize'.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Next Thought:",
+          "description": "${next_thought}"
+        },
+        {
+          "prefix": "Next Tool Name:",
+          "description": "${next_tool_name}"
+        },
+        {
+          "prefix": "Next Tool Args:",
+          "description": "${next_tool_args}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "winning_programs[3].react_module.extract.predict": {
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature": {
+      "instructions": "Answer questions using the retrieved context and the tools [search_wikipedia, lookup_page]. Search iteratively if needed and provide a concise answer based on context and tool results.\n\nEven if the context provides a direct answer, consider whether the answer needs to be rephrased or expanded upon to meet implicit requirements. Before finalizing the answer, think about whether it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.\n\nEven if the tool provides the same initial paragraph repeatedly, try to extract relevant information from the context and previous observations. If the answer is not directly available, consider rephrasing the question or using more specific keywords in the search query to narrow down the results. Before finalizing the answer, ensure that it is complete and satisfies any implicit requirements not explicitly stated in the prompt. For example, consider the source of the information or whether additional details are needed.",
+      "fields": [
+        {
+          "prefix": "Context:",
+          "description": "Facts retrieved from the knowledge base."
+        },
+        {
+          "prefix": "Question:",
+          "description": "${question}"
+        },
+        {
+          "prefix": "Trajectory:",
+          "description": "${trajectory}"
+        },
+        {
+          "prefix": "Reasoning: Let's think step by step in order to",
+          "description": "${reasoning}"
+        },
+        {
+          "prefix": "Answer:",
+          "description": "${answer}"
+        }
+      ]
+    },
+    "lm": null
+  },
+  "metadata": {
+    "dependency_versions": {
+      "python": "3.11",
+      "dspy": "2.6.19",
+      "cloudpickle": "3.1"
+    }
+  }
+}
