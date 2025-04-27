@@ -7,11 +7,16 @@ from dspy.retrieve import Retrieve
 from dspy.retrievers import Embeddings
 from dspy import Embedder
 import numpy as np # May still be needed indirectly
+from dspy.evaluate import Evaluate # Import Evaluate
+from dspy.evaluate.metrics import answer_exact_match # Use exact match for now
+from dspy import SIMBA
+import json
 
 # Configure DSPy LM - using a model specified in user rules
 # llm = dspy.OpenAI(model='gpt-3.5-turbo') # Example from plan
-# Using user-specified model preference
-llm = dspy.LM('openrouter/google/gemini-2.0-flash-001')
+llm = dspy.LM("openrouter/google/gemini-2.0-flash-001") # User preference
+# llm = dspy.LM("openrouter/deepseek/deepseek-r1-distill-qwen-32b") # Latest used
+# llm = dspy.LM("deepseek/deepseek-chat") # Use deepseek-chat via official API (ensure DEEPSEEK_API_KEY is set)
 dspy.settings.configure(lm=llm)
 
 def search_wikipedia(query: str) -> list[str]:
@@ -131,11 +136,23 @@ trainset = [dspy.Example(question=q, answer=a).with_inputs('question') for q, a 
 
 # 2. Define an evaluation metric
 def validate_answer(example, pred, trace=None):
-    """Basic metric: checks if the predicted answer contains the gold answer substring."""
-    # Simple substring check - can be improved (e.g., LLM-based check, F1 score)
-    predicted_answer = pred.answer.lower()
-    gold_answer = example.answer.lower()
-    return gold_answer in predicted_answer
+    """Validates the predicted answer against the gold answer using exact match."""
+    # Reverting to exact match for simplicity after import error
+    is_correct = answer_exact_match(example, pred, trace=trace)
+    print(f"Gold: {example.answer} | Pred: {pred.answer} | Exact Match: {is_correct}")
+    return is_correct # answer_exact_match returns True/False
+
+    # Previous attempt with answer_similarity:
+    # similarity_score = answer_similarity(example, pred, trace=trace)
+    # print(f"Gold: {example.answer} | Pred: {pred.answer} | Similarity: {similarity_score}")
+    # return float(similarity_score) # Ensure it returns a float
+
+    # Old simple check:
+    # predicted_answer = pred.answer.strip().lower()
+    # gold_answer = example.answer.strip().lower()
+    # is_correct = predicted_answer == gold_answer
+    # print(f"Gold: {gold_answer} | Pred: {predicted_answer} | Correct: {is_correct}")
+    # return is_correct
 
 # --- Test / Optimization Execution ---
 
