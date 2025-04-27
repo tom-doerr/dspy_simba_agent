@@ -43,27 +43,31 @@ def lookup_page(title: str) -> str:
         return "Error retrieving page content."
 
 # --- RAG Setup ---
-# 1. Define a dummy corpus (replace with actual documents later)
-dummy_corpus = [
-    "The first DSPy agent used a ReAct module for tool use.",
-    "Simba is an optimizer in DSPy for improving prompts and instructions.",
-    "RAG combines retrieval with generation to answer questions using external knowledge.",
-    "Faiss is a library for efficient similarity search, often used for vector stores.",
-    "The 2022 Nobel Peace Prize went to Ales Bialiatski, Memorial, and Center for Civil Liberties."
-]
+# 1. Define the Corpus
+corpus_path = "corpus.txt"
+corpus = []
+if os.path.exists(corpus_path):
+    with open(corpus_path, 'r') as f:
+        corpus = [line.strip() for line in f if line.strip()] # Read non-empty lines
+    print(f"Loaded corpus from {corpus_path} with {len(corpus)} documents.")
+else:
+    print(f"Warning: Corpus file '{corpus_path}' not found. RAG will have no knowledge base.")
 
 # 2. Set up the Retriever Model (using in-memory EmbedRetriever)
 # Ensure OPENAI_API_KEY is set in the environment for embeddings
 try:
     # Using OpenAI embeddings as suggested in the plan
     embedder = Embedder("openai/text-embedding-3-small")
-    retriever_model = Embeddings(embedder=embedder, corpus=dummy_corpus, k=3)
-    dspy.settings.configure(rm=retriever_model, lm=llm) # Configure retriever globally along with LM
-    print("RAG Retriever configured successfully using OpenAI embeddings.")
+    # Use the loaded corpus
+    if corpus: # Only create retriever if corpus is not empty
+        retriever_model = Embeddings(embedder=embedder, corpus=corpus, k=3)
+        dspy.settings.configure(rm=retriever_model, lm=llm) # Configure retriever globally along with LM
+        print("RAG Retriever configured successfully using OpenAI embeddings and corpus.txt.")
+    else:
+        print("Skipping retriever configuration as corpus is empty or file not found.")
 except Exception as e:
-    print(f"Failed to configure OpenAI Embedder/Retriever: {e}")
-    print("RAG will not be available.")
-    # Optionally configure a fallback or exit
+    print(f"Error setting up RAG Retriever: {e}")
+    print("RAG functionality will be disabled.")
     retriever_model = None # Indicate retriever is unavailable
     dspy.settings.configure(lm=llm) # Configure just the LM
 
@@ -114,9 +118,9 @@ agent = SimbaAgent(retriever_model=retriever_model, react_module=react_module)
 
 # 1. Create a simple trainset (replace with a real dataset later)
 train_data = [
-    ("What does RAG stand for?", "RAG combines retrieval with generation to answer questions using external knowledge."),
+    ("What framework is mentioned for programming LMs?", "DSPy is a framework from Stanford for programming language models."),
     ("What is Faiss?", "Faiss is a library for efficient similarity search, often used for vector stores."),
-    ("What is the role of the ReAct module in the initial agent?", "The first DSPy agent used a ReAct module for tool use."),
+    ("What does the ReAct paradigm combine?", "ReAct is an agent paradigm that combines reasoning and acting."),
     ("Who received the 2022 Nobel Peace Prize?", "The 2022 Nobel Peace Prize went to Ales Bialiatski, Memorial, and Center for Civil Liberties.")
 ]
 
@@ -168,7 +172,8 @@ if __name__ == "__main__":
         
         print("\n--- Starting Simba Optimization ---")
         # Check if retriever is available, as RAG context might be important for optimization
-        if retriever_model:
+        # Also check if corpus was loaded successfully
+        if retriever_model and corpus:
             # Instantiate the optimizer
             # Note: max_steps and max_demos are small for quick testing
             simba_optimizer = dspy.SIMBA(metric=validate_answer, max_steps=3, max_demos=4, bsize=4) # Set bsize
@@ -184,7 +189,7 @@ if __name__ == "__main__":
             print(f"Saved optimized agent to {optimized_agent_path}")
             optimized_agent = compiled_agent # Use the newly compiled agent
         else:
-            print("Skipping optimization as retriever is not configured.")
+            print("Skipping optimization as retriever is not configured or corpus is empty.")
             # Fall back to the unoptimized agent if optimization skipped
             optimized_agent = agent 
 

@@ -1,0 +1,5 @@
+DSPy is a framework from Stanford for programming language models, focusing on structure and optimization rather than just prompting.
+Simba is a prompt optimizer within DSPy that improves agent instructions and few-shot examples based on a metric.
+ReAct is an agent paradigm that combines reasoning and acting, allowing agents to use tools iteratively.
+Retrieval-Augmented Generation (RAG) enhances language model responses by retrieving relevant information from a knowledge base first.
+Faiss is a library developed by Facebook AI for efficient similarity search and clustering of dense vectors, often used in RAG systems.
