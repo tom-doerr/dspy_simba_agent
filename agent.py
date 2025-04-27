@@ -1,299 +1,301 @@
-import dspy
+"""DSPy Agent using ReAct, RAG, and SIMBA optimization."""
+
+import argparse
+import logging
+import sys
 import wikipedia
-import os
+import dspy
+from dspy.predict import ReAct
+from dspy.retrievers import Embeddings
+import litellm  # Import litellm
+import numpy as np  # Import numpy
+from typing import List, ClassVar  # Add ClassVar here
 
-# RAG Imports
-from dspy.evaluate.metrics import answer_exact_match # Use exact match for now
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-# Define necessary components (classes and functions) globally
 
-# --- RAG Setup (Helper Functions) ---
-def load_corpus(filepath: str) -> list[str]:
-    """Loads the text corpus from a file, one document per line."""
+# --- Define Wikipedia Search Function ---
+def wikipedia_search(query: str) -> str:
+    """Searches Wikipedia for a given query and returns summarized results."""
+    logging.info(f"--- Calling Wikipedia Function with query: '{query}' ---")
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            corpus = [line.strip() for line in f if line.strip()]
-        if not corpus:
-            print(f"Warning: Corpus file '{filepath}' is empty or contains only whitespace.")
-            return []
-        print(f"Loaded corpus from {filepath} with {len(corpus)} documents.")
-        return corpus
-    except FileNotFoundError:
-        print(f"Error: Corpus file not found at '{filepath}'.")
-        return []
-    except Exception as e:
-        print(f"Error loading corpus from '{filepath}': {e}")
-        return []
+        # Use auto_suggest=False to avoid ambiguity errors on broad queries
+        # Use sentences=3 for a concise summary
+        results = wikipedia.summary(query, sentences=3, auto_suggest=False)
+        logging.info(f"Wikipedia Result (first ~100 chars): {results[:100]}...")
+        return results
+    except wikipedia.exceptions.PageError:
+        logging.info(f"Wikipedia page not found for query: '{query}'")
+        return f"No Wikipedia page found for '{query}'."
+    except wikipedia.exceptions.DisambiguationError as e:
+        logging.info(
+            f"Wikipedia disambiguation error for query: '{query}'. Options: {e.options[:5]}..."
+        )
+        return f"Query '{query}' is ambiguous on Wikipedia. Try a more specific query."
+    except Exception as e:  # Catch other potential Wikipedia API errors
+        logging.error(f"Error during Wikipedia search for '{query}': {e}")
+        return f"An error occurred while searching Wikipedia for '{query}'."
 
-def setup_rag(corpus: list[str], embedder_name: str = "openai/text-embedding-3-small", dimensions: int = 512, k: int = 3) -> dspy.Module:
-    """Sets up the RAG retriever using dspy.retrievers.Embeddings.
+
+# --- Agent Signature --- #
+class AgentSignature(dspy.Signature):
+    """Asks a question and provides an answer, potentially using tools or context."""
+
+    instructions: ClassVar[str] = (
+        "Asks a question and provides an answer. "
+        "First, check the provided `context` to see if it contains the answer. "
+        "If the `context` is sufficient, provide the `answer` based on it. "
+        "If the `context` is insufficient or does not contain the answer, "
+        "you may use the available tools to find the necessary information before providing the final `answer`."
+    )
+    context = dspy.InputField(
+        desc="May contain relevant context for the question.", prefix="Context:\n"
+    )
+    question = dspy.InputField(desc="The question to answer.", prefix="Question: ")
+    answer = dspy.OutputField(
+        desc="The final answer to the question.", prefix="Answer:"
+    )
+
+
+# Define a callable wrapper for litellm embeddings
+class LiteLLMEmbedder:
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+
+    def __call__(self, texts: List[str]) -> np.ndarray:
+        """Embeds a list of texts using litellm.embedding and returns a numpy array."""
+        logging.debug(
+            f"Embedding {len(texts)} texts with model {self.model_name} via litellm..."
+        )
+        response = litellm.embedding(model=self.model_name, input=texts)
+        # Assuming response.data contains a list of embedding objects, each with an 'embedding' attribute
+        embeddings = [item["embedding"] for item in response.data]
+        logging.debug(f"Received {len(embeddings)} embeddings.")
+        return np.array(embeddings)
+
+
+def setup_rag(
+    corpus: list[str], embedder_name: str = "openai/text-embedding-3-small", k: int = 3
+):
+    """Sets up the RAG retriever using FAISS and specified embeddings.
 
     Args:
-        corpus: A list of document strings.
-        embedder_name: Name of the embedding model to use.
-        dimensions: The dimension size of the embeddings.
-        k: The default number of passages to retrieve.
-
+        corpus (list[str]): The list of documents for the corpus.
+        embedder_name (str): The name of the embedding model to use (e.g., from OpenAI).
+        k (int): The number of top passages to retrieve.
     Returns:
-        An instance of dspy.retrievers.Embeddings (or a similar backend) or None on error.
+        The configured retriever model, or None if setup fails.
     """
-    if not corpus:
-        print("Cannot setup RAG without a loaded corpus.")
-        return None # Return None if corpus is empty
-
+    logging.info("Setting up FAISS index for RAG...")
     try:
-        print(f"Setting up Embeddings retriever with {embedder_name} ({dimensions}d) for {len(corpus)} docs...")
-        # Instantiate the embedder
-        embedder = dspy.Embedder(embedder_name, dimensions=dimensions)
+        # Instantiate the custom LiteLLM embedder wrapper
+        logging.info(f"Creating LiteLLMEmbedder for model: {embedder_name}")
+        embedding_callable = LiteLLMEmbedder(model_name=embedder_name)
 
-        # Instantiate the Embeddings retriever backend
-        # Note: This might require `faiss-cpu` installed if the corpus is large
-        # The 'k' here is the default, but can be overridden during the call
-        backend_retriever = dspy.retrievers.Embeddings(embedder=embedder, corpus=corpus, k=k)
-        print(f"Embeddings instance created with k={k}.")
-        print("Embeddings Retriever backend configured successfully.")
-        return backend_retriever
-    except ModuleNotFoundError as e:
-        if 'faiss' in str(e):
-            print("Error setting up RAG: FAISS library not found. Install with 'pip install faiss-cpu' or 'pip install faiss-gpu'.")
-            print("Attempting to continue without FAISS (may be slow or fail for large corpora). Consider installing FAISS.")
-            # Potentially try brute force if FAISS is missing, but dspy.retrievers.Embeddings might handle this
-            try:
-                embedder = dspy.Embedder(embedder_name, dimensions=dimensions)
-                # Check if brute force is an option or if it handles it internally
-                backend_retriever = dspy.retrievers.Embeddings(embedder=embedder, corpus=corpus, k=k)
-                print("Embeddings Retriever backend configured successfully (likely using brute force).")
-                return backend_retriever
-            except Exception as inner_e:
-                print(f"Error setting up RAG even without FAISS attempt: {inner_e}")
-                return None
-        else:
-            print(f"Error setting up RAG (ModuleNotFoundError): {e}")
-            return None
+        # Use dspy.retrievers.Embeddings which handles the FAISS backend
+        # Pass the callable embedder instance
+        retriever_model = Embeddings(corpus=corpus, k=k, embedder=embedding_callable)
+        logging.info("FAISS index setup complete with k=%d.", k)
+    except ImportError as exc:  # W0707: Add 'from exc'
+        logging.error("FAISS library not found. Install via pip.")
+        logging.error("Error: %s", exc)
+        return None
     except Exception as e:
-        print(f"Error setting up RAG: {e}")
+        logging.error("Error setting up FAISS: %s", e, exc_info=True)
         return None
 
-# --- Tool Setup (Helper Function) ---
-def search_wikipedia(query: str) -> list[str]:
-    """Searches Wikipedia and returns the first paragraph of the top 3 results."""
-    try:
-        results = wikipedia.search(query, results=3)
-        summaries = []
-        for title in results:
-            try:
-                page = wikipedia.page(title, auto_suggest=False)
-                first_paragraph = next((p for p in page.content.split('\n') if p.strip()), "")
-                summaries.append(f"Title: {page.title}\nSummary: {first_paragraph}")
-            except wikipedia.exceptions.PageError:
-                summaries.append(f"Title: {title}\nSummary: Could not load page details.")
-            except wikipedia.exceptions.DisambiguationError as e:
-                summaries.append(f"Title: {title}\nSummary: Disambiguation error. Options: {e.options[:5]}")
-        return summaries
-    except Exception as e:
-        print(f"Error during Wikipedia search: {e}")
-        return [f"Error searching Wikipedia: {e}"]
+    return retriever_model
+
 
 # --- Agent Definition ---
-class ReActSignature(dspy.Signature):
-    """Define the input/output behavior of the ReAct module."""
-    context = dspy.InputField(desc="May contain relevant context.")
-    question = dspy.InputField()
-    answer = dspy.OutputField(desc="Often a detailed response to the question.")
-
-class ReActModule(dspy.Module):
-    """The ReAct module that uses the wikipedia tool."""
-    def __init__(self, tools: list):
-        super().__init__()
-        self.react = dspy.ReAct(ReActSignature, tools=tools)
-
-    def forward(self, question, context=None):
-        return self.react(question=question, context=context)
-
 class SimbaAgent(dspy.Module):
-    """A DSPy agent using ReAct and potentially RAG.
+    """A simple ReAct agent using DSPy, optionally with RAG."""
 
-    Uses ReAct for tool interaction and reasoning.
-    Optionally uses a provided retriever model for RAG.
-    """
-    def __init__(self, llm, tool, retriever_model=None):
+    # Note: ReAct expects LLM and RM to be configured via dspy.settings
+    def __init__(self, llm, retriever_model=None, use_tool=True):
         super().__init__()
         self.llm = llm
-        self.retriever_model = retriever_model # Store the retriever backend directly
-        self.tool = tool
+        self.retriever_model = retriever_model
+        self.use_tool = use_tool
 
-        # Define the ReAct module WITHOUT the retriever.
-        # Retrieval will be handled explicitly in the forward method.
-        self.react_module = dspy.ReAct(ReActSignature, tools=[self.tool],
-                                       # retriever=self.retriever_model, # REMOVED
-                                       max_iters=5)
+        # Initialize the tool only if use_tool is True
+        if self.use_tool:
+            # Wrap the wikipedia_search function with dspy.Tool
+            self.tool = dspy.Tool(
+                func=wikipedia_search,
+                name="wikipedia_search",
+                desc="Searches Wikipedia for a given query and returns summarized results.",
+                # Let dspy.Tool infer args from the function signature
+            )
+        else:
+            self.tool = None
 
     def forward(self, question):
-        # Explicitly handle retrieval first using the stored retriever model
+        """Executes the agent's logic: retrieve -> generate answer.
+        Uses ReAct module to decide between retrieval and tool use.
+        """
         context = ""
         if self.retriever_model:
             try:
-                # Call the retriever backend directly
-                # k is configured on the model itself during initialization
-                retrieved_passages = self.retriever_model(question)
-
-                # Ensure we handle potential non-list returns (though unlikely for Embeddings)
-                if isinstance(retrieved_passages, dspy.Prediction):
-                    passages = retrieved_passages.passages # Standard structure
-                elif isinstance(retrieved_passages, list):
-                    passages = retrieved_passages # Direct list
-                else:
-                    print(f"Warning: Unexpected retriever output type: {type(retrieved_passages)}")
-                    passages = []
-
-                context = "\n".join(passages)
-                print(f"\nRetrieved {len(passages)} passages for question: '{question}'")
+                # Retrieve relevant passages using the stored retriever model
+                retrieved_docs = self.retriever_model(question).passages
+                context = "\n".join(retrieved_docs)
+                logging.info("Retrieved context for question: %s...", context[:100])
             except Exception as e:
-                print(f"\nError during direct retrieval for question '{question}': {e}")
-                print("Proceeding without retrieved context.")
-                context = "" # Ensure context is empty on error
+                logging.error("Error during retrieval: %s", e, exc_info=True)
+                context = ""  # Proceed without context if retrieval fails
         else:
-            print("\nNo retriever model provided to agent. Skipping retrieval.")
+            logging.info("No retriever model configured, proceeding without retrieval.")
 
         # Call the ReAct module with context (potentially empty)
         # ReAct will use the context and decide whether to use tools.
-        result = self.react_module(question=question, context=context)
+        tools_list = [self.tool] if self.tool else []
+        result = ReAct(AgentSignature, tools=tools_list, max_iters=5)(
+            question=question, context=context
+        )
 
         # Ensure the final output is consistently a Prediction object
         if isinstance(result, dspy.Prediction):
+            logging.info("ReAct module returned a Prediction.")
             return result
-        elif hasattr(result, 'answer'):
-            return dspy.Prediction(answer=result.answer)
-        else:
-            # Fallback if ReAct output structure is unexpected
-            print(f"Warning: Unexpected ReAct output type: {type(result)}")
-            return dspy.Prediction(answer=str(result))
+        # If ReAct returns a string or other type, wrap it
+        logging.warning("ReAct module returned non-Prediction type: %s", type(result))
+        return dspy.Prediction(answer=str(result))  # Attempt conversion
 
-    def save(self, path):
-        """Saves the state of the ReAct module."""
-        print(f"Attempting to save ReAct module state to {path}...")
-        # Only save the ReAct module's state, as it contains the compiled reasoning trace
-        if hasattr(self, 'react_module') and self.react_module:
-            self.react_module.save(path)
-            print(f"Saved ReAct module state to {path}")
-
-    def load(self, path):
-        print(f"Attempting to load agent state (ReAct module) from {path}...")
-        # Load the state into the existing react_module
-        if hasattr(self, 'react_module') and self.react_module:
-            try:
-                self.react_module.load(path)
-                print(f"Loaded ReAct module state from {path}")
-            except Exception as e:
-                print(f"Error loading ReAct module state from {path}: {e}")
-        else:
-            print("Error: react_module not initialized before load.")
 
 # --- Evaluation Metric ---
-# 1. Define dummy data (replace with actual data later)
-dummy_data = [
-    {"question": "What is the capital of France?", "answer": "Paris"},
-    {"question": "Who wrote Hamlet?", "answer": "William Shakespeare"},
-    # Add more diverse examples relevant to your potential corpus/tasks
-    {"question": "Explain DSPy Simba", "answer": "Simba is an optimizer in DSPy for few-shot learning in agents or multi-step programs."},
-    {"question": "What year did the Titanic sink?", "answer": "1912"}
-]
-trainset = [dspy.Example(x).with_inputs('question') for x in dummy_data]
+def metric(example, pred, trace=None):  # C0116: Added basic docstring
+    """Basic evaluation metric (placeholder)."""
+    # W0613: Unused 'example', 'trace' - common in dspy metrics
+    # pylint: disable=unused-argument
+    # Placeholder: Check if prediction is not empty
+    return len(pred.answer) > 0
 
-# 2. Define an evaluation metric
-def validate_answer(example, pred, trace=None):
-    """Validates the predicted answer against the gold answer using exact match."""
-    # Reverting to exact match for simplicity after import error
-    is_correct = answer_exact_match(example, pred, trace=trace)
-    print(f"Gold: {example.answer} | Pred: {pred.answer} | Exact Match: {is_correct}")
-    return is_correct # answer_exact_match returns True/False
 
-# --- Test / Optimization Execution --- Only runs when script is executed directly
-
+# --- Main Execution Block ---
 if __name__ == "__main__":
-    import argparse # Import here as it's only needed for direct execution
-    from dotenv import load_dotenv # Import here
+    # --- Setup LLM and DSPy settings --- #
+    # Configure the language model globally (Important: Do this early!)
+    dspy.settings.configure(lm=dspy.LM("openrouter/google/gemini-2.0-flash-001"))
 
-    load_dotenv() # Load environment variables
+    # --- Configuration --- #
+    parser = argparse.ArgumentParser(description="Run DSPy Simba Agent.")
+    parser.add_argument(
+        "--llm",
+        type=str,
+        default="openrouter/google/gemini-2.0-flash-001",
+        help="LLM model name (via LiteLLM, e.g., 'openai/gpt-3.5-turbo' or 'deepseek/deepseek-chat')",
+    )
+    parser.add_argument(
+        "--embedder",
+        type=str,
+        default="openai/text-embedding-3-small",
+        help="Embedding model name (e.g., 'openai/text-embedding-3-small')",
+    )
+    parser.add_argument(
+        "--corpus",
+        type=str,
+        default=None,
+        help="Path to the corpus file for RAG setup.",
+    )
+    parser.add_argument(
+        "--k", type=int, default=3, help="Number of passages to retrieve for RAG."
+    )
+    parser.add_argument(
+        "--question", type=str, default=None, help="The question to ask the agent."
+    )
+    parser.add_argument(
+        "--interactive", action="store_true", help="Run the agent in interactive mode."
+    )
 
-    # --- Instantiate DSPy components inside the main block ---
-    print("(Main) Instantiating and configuring DSPy components...")
-    llm = dspy.LM("openrouter/google/gemini-2.0-flash-001") # User preference
-    print("(Main) Configuring DSPy settings...")
-    dspy.settings.configure(lm=llm)
-
-    # Instantiate the Wikipedia tool
-    wikipedia_tool = dspy.Tool(name="wikipedia_search",
-                               desc="Searches Wikipedia for a given query.",
-                               input_variable="query",
-                               func=search_wikipedia)
-
-    # --- Set up RAG --- 
-    corpus_filepath = "corpus.txt" # Define corpus path
-    corpus = load_corpus(corpus_filepath)
-    retriever_model = setup_rag(corpus) if corpus else None
-    if not retriever_model:
-        print("Warning: RAG setup failed or corpus is empty. Agent will run without retrieval.")
-
-    # --- Instantiate the Agent ---
-    agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
-
-    # --- Argument Parsing for command-line execution ---
-    parser = argparse.ArgumentParser(description="Run or optimize the DSPy Simba Agent.")
-    parser.add_argument("--query", type=str, default="What is DSPy Simba?", help="The question to ask the agent.")
-    parser.add_argument("--optimize", action="store_true", help="Run Simba optimization.")
-    parser.add_argument("--load_opt", type=str, default="simba_agent_optimized.json", help="Path to load optimized agent state.")
-    parser.add_argument("--save_opt", type=str, default="simba_agent_optimized.json", help="Path to save optimized agent state.")
     args = parser.parse_args()
 
-    agent_to_run = agent # Default to the non-optimized agent
+    # --- Setup LLM ---
+    logging.info("Configuring LLM: %s", args.llm)
+    llm = dspy.LM(args.llm)
+    try:
+        # Try a simple generation to check connectivity (optional)
+        # llm("Test prompt")
+        pass  # A try block cannot be empty
+    except Exception as e:
+        logging.error("Error configuring LLM: %s", e, exc_info=True)
+        sys.exit(1)
 
-    # --- Load or Optimize --- 
-    optimized_agent_path = args.load_opt
-    if os.path.exists(optimized_agent_path) and not args.optimize:
+    # --- Setup RAG (only if corpus provided) ---
+    retriever_model_main = None
+    if args.corpus:
+        logging.info("Loading corpus from: %s", args.corpus)
+        corpus_texts = []
         try:
-            print(f"\nLoading optimized agent from {optimized_agent_path}...")
-            # Re-instantiate the agent structure before loading
-            loaded_agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
-            loaded_agent.load(optimized_agent_path) # Load state into the react_module
-            agent_to_run = loaded_agent
-            print("Successfully loaded optimized agent state.")
+            with open(args.corpus, "r", encoding="utf-8") as f:
+                corpus_texts = [line.strip() for line in f if line.strip()]
+            logging.info("Loaded %d documents from corpus.", len(corpus_texts))
+            if len(corpus_texts) > 0:
+                logging.info("Setting up RAG retriever...")
+                try:
+                    retriever_model_main = setup_rag(
+                        corpus_texts, embedder_name=args.embedder, k=args.k
+                    )
+                    logging.info("RAG setup complete.")
+                except Exception as e:
+                    logging.error(
+                        "Error setting up RAG retriever: %s", e, exc_info=True
+                    )
+                    logging.warning("Continuing without RAG due to setup error.")
+            else:
+                logging.warning("Corpus file loaded but was empty. No RAG setup.")
+        except FileNotFoundError:
+            logging.error(
+                "Corpus file not found at %s. Skipping RAG setup.", args.corpus
+            )
         except Exception as e:
-            print(f"Error loading optimized agent: {e}. Using unoptimized agent.")
-            agent_to_run = agent
+            logging.error("Error loading corpus: %s", e, exc_info=True)
 
-    elif args.optimize:
-        print("\n--- Starting Simba Optimization ---")
-        if retriever_model and corpus and wikipedia_tool:
-            simba_optimizer = dspy.SIMBA(metric=validate_answer, max_steps=3, max_demos=4, bsize=4)
-            print("Starting Simba optimization with validate_answer metric...")
+    # --- Setup Agent ---
+    logging.info("Initializing Simba Agent...")
+    agent = SimbaAgent(llm=llm, retriever_model=retriever_model_main)
+
+    # --- Run Agent --- #
+    if args.question:
+        logging.info("Running agent with question: '%s'", args.question)
+        prediction = agent(question=args.question)
+        logging.info("Agent Final Answer:\n%s", prediction.answer)
+
+        # --- Optional: Display Trace --- #
+        # E1111 Fix: inspect_history likely prints, doesn't return
+        llm.inspect_history(n=1)
+        print("\n\n--- Agent Trace ---")
+        # Trace is printed by inspect_history itself
+
+    elif args.interactive:
+        print("Entering interactive mode. Type 'quit' or 'exit' to end.")
+        while True:
             try:
-                # Ensure the student agent has the correct submodules before compiling
-                student_agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
-                compiled_agent = simba_optimizer.compile(student=student_agent, trainset=trainset, seed=123)
-                print("\n--- Optimization Complete ---")
-                agent_to_run = compiled_agent
-                save_path = args.save_opt
-                agent_to_run.save(save_path)
-                print(f"Saved optimized agent to {save_path}")
-            except Exception as e:
-                print("\n--- ERROR during Simba Optimization --- ")
-                print(f"{type(e).__name__}: {e}")
-                print("Optimization failed. Using unoptimized agent.")
-                agent_to_run = agent # Fallback to unoptimized
-        else:
-            print("Skipping optimization as RAG components (retriever/corpus) or tools are not ready.")
-            agent_to_run = agent # Use unoptimized if components missing
+                user_question = input("\nEnter your question: ")
+                if user_question.lower() in ["quit", "exit"]:
+                    break
+                if not user_question:
+                    continue
+                prediction = agent(question=user_question)
+                print("\nAgent Answer:")
+                print(prediction.answer)
 
-    # --- Execute Query --- 
-    print(f"\n--- Running Agent ({'Loaded Optimized' if agent_to_run is not agent and not args.optimize else ('Newly Optimized' if args.optimize else 'Unoptimized')}) --- ")
-    test_query = args.query
-    print(f"Query: {test_query}")
-    final_result = agent_to_run(question=test_query)
-    print(f"\nFinal Answer: {final_result.answer}")
+                # Optionally show trace in interactive mode too
+                # E1111 Fix: inspect_history likely prints, doesn't return
+                llm.inspect_history(n=1)
+                print("\n--- Trace ---")
+                # Trace is printed by inspect_history itself
 
-    # Optional: Evaluate after running
-    # print("\n--- Evaluating Final Agent on Trainset --- ")
-    # evaluate = Evaluate(devset=trainset, metric=validate_answer, num_threads=1, display_progress=True)
-    # score = evaluate(agent_to_run)
-    # print(f"\nFinal Agent Score (Exact Match on trainset): {score}")
+            except EOFError:
+                break  # Exit on Ctrl+D
+            except KeyboardInterrupt:
+                print("\nExiting interactive mode.")
+                break  # Ensure this is indented correctly
+            except Exception as e:  # W0718: Be more specific if possible
+                print(f"\nAn error occurred: {e}")
+                logging.error("Error in interactive loop: %s", e, exc_info=True)
+
+    logging.info("Agent finished.")
