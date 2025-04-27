@@ -50,7 +50,7 @@ def setup_rag(corpus: list[str], embedder_name: str = "openai/text-embedding-3-s
         # Note: This might require `faiss-cpu` installed if the corpus is large
         # The 'k' here is the default, but can be overridden during the call
         backend_retriever = dspy.retrievers.Embeddings(embedder=embedder, corpus=corpus, k=k)
-
+        print(f"Embeddings instance created with k={k}.")
         print("Embeddings Retriever backend configured successfully.")
         return backend_retriever
     except ModuleNotFoundError as e:
@@ -111,34 +111,66 @@ class ReActModule(dspy.Module):
         return self.react(question=question, context=context)
 
 class SimbaAgent(dspy.Module):
-    """The main agent integrating RAG and ReAct."""
-    def __init__(self, llm, tool, k=3):
+    """A DSPy agent using ReAct and potentially RAG.
+
+    Uses ReAct for tool interaction and reasoning.
+    Optionally uses a provided retriever model for RAG.
+    """
+    def __init__(self, llm, tool, retriever_model=None):
         super().__init__()
-        self.k = k # Number of passages to retrieve
-        self.react_module = ReActModule(tools=[tool]) # Instantiate ReActModule here
+        self.llm = llm
+        self.retriever_model = retriever_model # Store the retriever backend directly
+        self.tool = tool
+
+        # Define the ReAct module WITHOUT the retriever.
+        # Retrieval will be handled explicitly in the forward method.
+        self.react_module = dspy.ReAct(ReActSignature, tools=[self.tool],
+                                       # retriever=self.retriever_model, # REMOVED
+                                       max_iters=5)
 
     def forward(self, question):
-        # Use dspy.Retrieve locally, which relies on globally configured dspy.settings.rm
-        retrieved_docs_str = ""
-        try:
-            # Create a local Retrieve client that uses the global rm
-            retrieve_client = dspy.Retrieve(k=self.k)
-            retrieved_docs_list = retrieve_client(question).passages
-            retrieved_docs_str = "\n".join(retrieved_docs_list)
-            print(f"\nRetrieved {len(retrieved_docs_list)} passages for question: '{question}'")
-        except Exception as e:
-            print(f"\nError during retrieval for question '{question}': {e}")
-            print("Proceeding without retrieved context.")
-            # Potentially check if dspy.settings.rm is configured
-            if not dspy.settings.rm:
-                print("Warning: dspy.settings.rm is not configured.")
+        # Explicitly handle retrieval first using the stored retriever model
+        context = ""
+        if self.retriever_model:
+            try:
+                # Call the retriever backend directly
+                # k is configured on the model itself during initialization
+                retrieved_passages = self.retriever_model(question)
+
+                # Ensure we handle potential non-list returns (though unlikely for Embeddings)
+                if isinstance(retrieved_passages, dspy.Prediction):
+                    passages = retrieved_passages.passages # Standard structure
+                elif isinstance(retrieved_passages, list):
+                    passages = retrieved_passages # Direct list
+                else:
+                    print(f"Warning: Unexpected retriever output type: {type(retrieved_passages)}")
+                    passages = []
+
+                context = "\n".join(passages)
+                print(f"\nRetrieved {len(passages)} passages for question: '{question}'")
+            except Exception as e:
+                print(f"\nError during direct retrieval for question '{question}': {e}")
+                print("Proceeding without retrieved context.")
+                context = "" # Ensure context is empty on error
+        else:
+            print("\nNo retriever model provided to agent. Skipping retrieval.")
 
         # Call the ReAct module with context (potentially empty)
-        result = self.react_module(question=question, context=retrieved_docs_str)
+        # ReAct will use the context and decide whether to use tools.
+        result = self.react_module(question=question, context=context)
 
-        return dspy.Prediction(answer=result.answer)
+        # Ensure the final output is consistently a Prediction object
+        if isinstance(result, dspy.Prediction):
+            return result
+        elif hasattr(result, 'answer'):
+            return dspy.Prediction(answer=result.answer)
+        else:
+            # Fallback if ReAct output structure is unexpected
+            print(f"Warning: Unexpected ReAct output type: {type(result)}")
+            return dspy.Prediction(answer=str(result))
 
     def save(self, path):
+        """Saves the state of the ReAct module."""
         print(f"Attempting to save ReAct module state to {path}...")
         # Only save the ReAct module's state, as it contains the compiled reasoning trace
         if hasattr(self, 'react_module') and self.react_module:
@@ -204,7 +236,7 @@ if __name__ == "__main__":
         print("Warning: RAG setup failed or corpus is empty. Agent will run without retrieval.")
 
     # --- Instantiate the Agent ---
-    agent = SimbaAgent(llm=llm, tool=wikipedia_tool)
+    agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
 
     # --- Argument Parsing for command-line execution ---
     parser = argparse.ArgumentParser(description="Run or optimize the DSPy Simba Agent.")
@@ -222,7 +254,7 @@ if __name__ == "__main__":
         try:
             print(f"\nLoading optimized agent from {optimized_agent_path}...")
             # Re-instantiate the agent structure before loading
-            loaded_agent = SimbaAgent(llm=llm, tool=wikipedia_tool)
+            loaded_agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
             loaded_agent.load(optimized_agent_path) # Load state into the react_module
             agent_to_run = loaded_agent
             print("Successfully loaded optimized agent state.")
@@ -237,7 +269,7 @@ if __name__ == "__main__":
             print("Starting Simba optimization with validate_answer metric...")
             try:
                 # Ensure the student agent has the correct submodules before compiling
-                student_agent = SimbaAgent(llm=llm, tool=wikipedia_tool)
+                student_agent = SimbaAgent(llm=llm, tool=wikipedia_tool, retriever_model=retriever_model)
                 compiled_agent = simba_optimizer.compile(student=student_agent, trainset=trainset, seed=123)
                 print("\n--- Optimization Complete ---")
                 agent_to_run = compiled_agent

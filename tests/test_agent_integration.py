@@ -49,22 +49,30 @@ def corpus_data():
 # Fixture to set up the RAG retriever once per module
 @pytest.fixture(scope="module")
 def rag_retriever(corpus_data):
+    """Fixture to set up and return the RAG retriever backend."""
     print("\n(Test Fixture) Setting up RAG retriever backend...")
-    # setup_rag now returns the backend (e.g., Embeddings), not the client (dspy.Retrieve)
-    backend_retriever = setup_rag(corpus_data)
+    corpus = corpus_data
+    if not corpus:
+        print("Warning: Corpus fixture is empty. RAG tests might behave unexpectedly.")
+        return None
 
-    if backend_retriever:
-        print("(Test Fixture) Configuring dspy.settings.rm globally with backend...")
-        # Set the global RM to the backend instance
-        dspy.settings.configure(rm=backend_retriever)
-    else:
-        print("(Test Fixture) RAG setup failed, dspy.settings.rm not configured.")
-        # Ensure RM is explicitly unset if setup failed
-        if hasattr(dspy.settings, 'rm'):
-             dspy.settings.configure(rm=None)
+    # Setup the Embeddings backend
+    embedder_name = "openai/text-embedding-3-small"
+    dimensions = 512 # Match common OpenAI embedding dims
+    k_fixture = 3
+    print(f"Setting up Embeddings retriever with {embedder_name} ({dimensions}d) for {len(corpus)} docs, k={k_fixture}...")
+    try:
+        # Use the actual setup_rag function from agent.py
+        backend_retriever = setup_rag(corpus=corpus, embedder_name=embedder_name, dimensions=dimensions, k=k_fixture)
+        print("Embeddings Retriever backend configured successfully.")
 
-    assert backend_retriever is not None, "RAG retriever backend setup failed in fixture"
-    return backend_retriever # Return the backend instance
+        # Return the *backend* retriever module, not the Retrieve client
+        return backend_retriever
+    except ImportError as e:
+        pytest.skip(f"Skipping RAG tests: {e}") # Skip if FAISS/dependencies missing
+    except Exception as e:
+        print(f"Error setting up RAG retriever fixture: {e}")
+        pytest.fail(f"Failed to setup RAG retriever: {e}")
 
 # Fixture to instantiate the Wikipedia tool once per module
 @pytest.fixture(scope="module")
@@ -78,11 +86,11 @@ def wikipedia_tool_instance():
 # Fixture to instantiate the SimbaAgent once per module
 @pytest.fixture(scope="module")
 def simba_agent_instance(setup_dspy_settings_for_tests, rag_retriever, wikipedia_tool_instance):
+    """Fixture to create a SimbaAgent instance for testing."""
     print("\n(Test Fixture) Instantiating SimbaAgent...")
-    # The agent now uses the globally configured RM, so we don't pass it here.
-    # It needs the configured LLM (from setup_dspy) and the tool.
-    agent = SimbaAgent(llm=dspy.settings.lm, tool=wikipedia_tool_instance)
-    assert agent is not None, "SimbaAgent instantiation failed"
+    # Pass the retriever model directly to the agent
+    agent = SimbaAgent(llm=dspy.settings.lm, tool=wikipedia_tool_instance, retriever_model=rag_retriever)
+    assert agent is not None, "Failed to instantiate SimbaAgent"
     return agent
 
 # Basic test to check initialization of RAG and Agent
@@ -91,9 +99,9 @@ def test_agent_initialization(rag_retriever, simba_agent_instance):
     print("\n--- Running test_agent_initialization ---")
     assert rag_retriever is not None, "RAG retriever fixture failed (backend should be created)"
     assert simba_agent_instance is not None, "SimbaAgent fixture failed"
-    # Instead, check if the global RM was configured by the rag_retriever fixture
-    assert dspy.settings.rm is not None, "dspy.settings.rm was not configured by fixtures"
-    assert dspy.settings.rm == rag_retriever, "dspy.settings.rm is not the backend from the fixture"
+    # Check agent has the retriever model attribute set correctly
+    assert hasattr(simba_agent_instance, 'retriever_model'), "Agent missing retriever_model attribute"
+    assert simba_agent_instance.retriever_model is rag_retriever, "Agent's retriever_model is not the one from the fixture"
 
 # Test a simple query without expecting specific results yet
 # Adds timeout via pytest-timeout default
@@ -104,31 +112,58 @@ def test_agent_simple_query(simba_agent_instance):
     question = "What is DSPy?"
     print(f"Querying agent: '{question}'")
     result = test_agent(question=question)
+
     assert result is not None, "Agent should return a result"
     assert hasattr(result, 'answer'), "Result should have an 'answer' attribute"
-    print(f"Agent answer: {result.answer}")
+    assert isinstance(result.answer, str), "Answer should be a string"
+    assert len(result.answer) > 10, "Answer seems too short to be descriptive"
+    # Check for relevant keywords (case-insensitive)
+    answer_lower = result.answer.lower()
+    assert "dspy" in answer_lower, "Answer should mention DSPy"
+    assert "framework" in answer_lower or "library" in answer_lower, "Answer should mention 'framework' or 'library'"
+    assert "language model" in answer_lower or "lm" in answer_lower, "Answer should mention language models"
+    print(f"Agent Answer: {result.answer}") # Print answer for inspection
 
 # Test running a query that should primarily use RAG
 @pytest.mark.integration
 def test_agent_with_rag(simba_agent_instance):
     print("\n--- Running test_agent_with_rag ---")
     test_agent = simba_agent_instance 
+    # Check if the agent was initialized with a retriever model
+    assert test_agent.retriever_model is not None, "Agent fixture did not provide a retriever model to the agent instance."
+
     question = "Explain DSPy framework based on context."
     print(f"Querying agent: '{question}'")
     # The call itself will use the globally configured RAG via dspy.Retrieve
     result = test_agent(question=question)
+
     assert result is not None, "Agent should return a result"
     assert hasattr(result, 'answer'), "Result should have an 'answer' attribute"
-    print(f"Agent answer: {result.answer}")
+    assert isinstance(result.answer, str), "Answer should be a string"
+    assert len(result.answer) > 10, "Answer seems too short"
+
+    # Check for keywords expected from the corpus context (case-insensitive)
+    answer_lower = result.answer.lower()
+    assert "dspy" in answer_lower, "Answer should mention DSPy"
+    assert "framework" in answer_lower, "Answer should mention 'framework'"
+    assert "stanford" in answer_lower, "Answer should mention 'Stanford' (from corpus)"
+    assert "language model" in answer_lower or "lm" in answer_lower, "Answer should mention language models"
+    assert "structure" in answer_lower or "optimization" in answer_lower, "Answer should mention 'structure' or 'optimization' (from corpus)"
+    print(f"Agent Answer (RAG): {result.answer}") # Print answer for inspection
 
 # Test running a query that should primarily use the Wikipedia tool
 @pytest.mark.integration
 def test_agent_wikipedia_search(simba_agent_instance):
     print("\n--- Running test_agent_wikipedia_search ---")
     test_agent = simba_agent_instance 
-    question = "Who was the first president of the United States?"
+    question = "Who was the first US President?"
     print(f"Querying agent: '{question}'")
     result = test_agent(question=question)
+
     assert result is not None, "Agent should return a result"
     assert hasattr(result, 'answer'), "Result should have an 'answer' attribute"
-    print(f"Agent answer: {result.answer}")
+    assert isinstance(result.answer, str), "Answer should be a string"
+    # Check if the expected answer is present (case-insensitive)
+    answer_lower = result.answer.lower()
+    assert "george washington" in answer_lower, "Answer should contain 'George Washington'"
+    print(f"Agent Answer: {result.answer}") # Print answer for inspection
