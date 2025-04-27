@@ -142,40 +142,58 @@ if __name__ == "__main__":
     question = "What is Simba in DSPy?"
     print(f"Testing agent with question: '{question}'")
 
-    if retriever_model is None:
-        print("Skipping agent test as retriever is not configured.")
-    else:
-        result = agent(question=question)
-        print("\nAgent Result:")
-        print(f"Answer: {result.answer}")
-
-        # Print the full history for debugging/inspection
-        print("\nAgent Trace:")
-        # Inspect history of the underlying LLM
-        # Need to access the LM used by the react_module, assuming global settings
-        # or potentially access via agent.react_module.signature.lm if configured per module
+    # Run the agent without optimization
+    result = agent(question=question)
+    print("\nAgent Result:")
+    print(f"Answer: {result.answer}")
+    print("\nAgent Trace:")
+    if hasattr(dspy.settings.lm, 'inspect_history'):
         dspy.settings.lm.inspect_history(n=1) # Inspect the last interaction
 
-    # Run Simba Optimization
-    print("\n--- Starting Simba Optimization ---")
-    # Check if retriever is available, as RAG context might be important for optimization
-    if retriever_model:
-        # Instantiate the optimizer
-        # Note: max_steps and max_demos are small for quick testing
-        simba_optimizer = dspy.SIMBA(metric=validate_answer, max_steps=3, max_demos=4, bsize=4) # Set bsize
+    # --- Simba Optimization --- 
+    optimized_agent_path = "simba_agent_optimized.json"
+    optimized_agent = None
 
-        # Compile the agent
-        # student=agent copies the agent structure
-        optimized_agent = simba_optimizer.compile(student=agent, trainset=trainset, seed=123)
+    try:
+        # Try to load the optimized agent
+        agent_to_load = SimbaAgent(retriever_model=None, react_module=None) # Need a base structure to load into
+        agent_to_load.load(optimized_agent_path)
+        # Re-assign the actual submodules after loading the state
+        agent_to_load.retriever_model = retriever_model # Use the model created earlier
+        agent_to_load.react_module = react_module     # Use the module created earlier
+        optimized_agent = agent_to_load
+        print(f"\nLoaded optimized agent from {optimized_agent_path}")
+    except FileNotFoundError:
+        print(f"\nOptimized agent file '{optimized_agent_path}' not found. Running optimization...")
         
-        print("\n--- Optimization Complete ---")
+        print("\n--- Starting Simba Optimization ---")
+        # Check if retriever is available, as RAG context might be important for optimization
+        if retriever_model:
+            # Instantiate the optimizer
+            # Note: max_steps and max_demos are small for quick testing
+            simba_optimizer = dspy.SIMBA(metric=validate_answer, max_steps=3, max_demos=4, bsize=4) # Set bsize
 
-        # Test the optimized agent
-        print(f"\nTesting OPTIMIZED agent with question: '{question}'")
+            # Compile the agent
+            # student=agent copies the agent structure
+            compiled_agent = simba_optimizer.compile(student=agent, trainset=trainset, seed=123)
+            
+            print("\n--- Optimization Complete ---")
+
+            # Save the optimized agent
+            compiled_agent.save(optimized_agent_path)
+            print(f"Saved optimized agent to {optimized_agent_path}")
+            optimized_agent = compiled_agent # Use the newly compiled agent
+        else:
+            print("Skipping optimization as retriever is not configured.")
+            # Fall back to the unoptimized agent if optimization skipped
+            optimized_agent = agent 
+
+    # Test the final agent (either loaded or newly optimized)
+    if optimized_agent:
+        print(f"\nTesting FINAL agent with question: '{question}'")
         opt_result = optimized_agent(question=question)
-        print("\nOptimized Agent Result:")
+        print("\nFinal Agent Result:")
         print(f"Answer: {opt_result.answer}")
-        print("\nOptimized Agent Trace:")
-        dspy.settings.lm.inspect_history(n=1)
-    else:
-        print("Skipping optimization as retriever is not configured.")
+        print("\nFinal Agent Trace:")
+        if hasattr(dspy.settings.lm, 'inspect_history'):
+            dspy.settings.lm.inspect_history(n=1)
