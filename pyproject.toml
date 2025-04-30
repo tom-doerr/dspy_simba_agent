@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "DSPy SIMBA Coding Agent"
 authors = ["Your Name <you@example.com>"]
 license = "MIT"
+packages = [
+  { include = "coding_agent" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
