@@ -1,0 +1,11 @@
+dspy-ai
+litellm
+numpy
+faiss-cpu
+wikipedia
+requests
+beautifulsoup4
+pytest
+reasoning-gym
+human-eval
+datasets
