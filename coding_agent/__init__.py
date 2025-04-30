@@ -1,7 +1,6 @@
 import dspy
 import typing
 import logging
-import subprocess
 import tempfile
 import os
 import datasets
