@@ -1,4 +1,14 @@
-__version__ = "0.1.0"
+try:
+    # For Python ≥3.8
+    from importlib.metadata import version, PackageNotFoundError
+except ImportError:
+    # Fallback for older Python versions
+    from importlib_metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("dspy-simba-agent")
+except PackageNotFoundError:
+    __version__ = "0.1.0"
 
 import dspy
 import typing
@@ -9,9 +19,14 @@ import datasets
 from human_eval.data import write_jsonl, HUMAN_EVAL
 from human_eval.evaluation import evaluate_functional_correctness
 
-# Configure logging level and format
+# Print a Python code block
+def print_code_block(code: str) -> None:
+    print("```python")
+    print(code)
+    print("```")
+
 def configure_logging(level: int = logging.DEBUG) -> None:
-    logging.basicConfig(level=level, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(level=level, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def configure_lm(lm_name: str) -> dspy.LM:
     logging.info(f"Configuring LM: {lm_name}")
@@ -23,9 +38,9 @@ def load_human_eval_dataset() -> typing.List[dict]:
     logging.info("Loading HumanEval dataset via Hugging Face datasets...")
     try:
         human_eval_ds = datasets.load_dataset("openai_humaneval")
-        if 'test' not in human_eval_ds:
+        if "test" not in human_eval_ds:
             raise ValueError("Expected 'test' split not found in openai_humaneval dataset.")
-        problems = list(human_eval_ds['test'])
+        problems = list(human_eval_ds["test"])
         logging.info(f"Loaded {len(problems)} HumanEval problems.")
         return problems
     except Exception as e:
@@ -35,15 +50,14 @@ def load_human_eval_dataset() -> typing.List[dict]:
 
 def prepare_dspy_dataset(problems: typing.List[dict]) -> typing.List[dspy.Example]:
     return [
-        dspy.Example(prompt=item['prompt'], problem=item).with_inputs('prompt')
+        dspy.Example(prompt=item["prompt"], problem=item).with_inputs("prompt")
         for item in problems
     ]
 
 def get_devset(dataset: typing.List[dspy.Example], optimization_subset_size: int) -> typing.List[dspy.Example]:
     if len(dataset) < optimization_subset_size:
         logging.warning(
-            f"Dataset size ({len(dataset)}) is smaller than requested optimization subset size ({optimization_subset_size})."
-            " Using full dataset."
+            f"Dataset size ({len(dataset)}) < subset size ({optimization_subset_size}), using full dataset."
         )
         return dataset
     devset = dataset[:optimization_subset_size]
@@ -51,8 +65,12 @@ def get_devset(dataset: typing.List[dspy.Example], optimization_subset_size: int
     return devset
 
 class CodingSignature(dspy.Signature):
-    prompt: str = dspy.InputField(desc="The prompt from the HumanEval dataset, including function signature and docstring.")
-    completion: str = dspy.OutputField(desc="The generated Python code completion (function body).")
+    prompt: str = dspy.InputField(
+        desc="The prompt from the HumanEval dataset (signature+docstring)."
+    )
+    completion: str = dspy.OutputField(
+        desc="The generated Python code completion (function body)."
+    )
 
 class SimpleCoder(dspy.Module):
     def __init__(self) -> None:
@@ -64,23 +82,21 @@ class SimpleCoder(dspy.Module):
 
 def human_eval_metric(gold, pred, trace=None) -> float:
     problem = gold.problem
-    generated_completion = pred.completion
+    gen = pred.completion
     task_id = problem.get("task_id", "UnknownTaskID")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        samples = [{"task_id": task_id, "completion": generated_completion}]
+        samples = [{"task_id": task_id, "completion": gen}]
         samples_path = os.path.join(tmpdir, "samples.jsonl")
 
         try:
             write_jsonl(samples_path, samples)
             logging.debug(f"Wrote samples to {samples_path}")
             if not os.path.exists(samples_path):
-                logging.error(f"Samples file {samples_path} not found after writing.")
+                logging.error(f"{samples_path} missing after write.")
                 return 0.0
-            with open(samples_path, 'r') as f:
-                content = f.read().strip()
-            if not content:
-                logging.error(f"Samples file {samples_path} is empty.")
+            if not open(samples_path).read().strip():
+                logging.error(f"{samples_path} is empty.")
                 return 0.0
         except Exception as e:
             logging.error(f"Error writing samples file: {e}")
@@ -88,54 +104,50 @@ def human_eval_metric(gold, pred, trace=None) -> float:
 
         try:
             results = evaluate_functional_correctness(
-                sample_file=samples_path,
-                problem_file=HUMAN_EVAL,
-                k=[1],
-                timeout=10
+                sample_file=samples_path, problem_file=HUMAN_EVAL, k=[1], timeout=10
             )
-            pass_at_1 = results.get("pass@1", 0.0)
-            return 1.0 if pass_at_1 > 0 else 0.0
+            return 1.0 if results.get("pass@1", 0) > 0 else 0.0
         except Exception as e:
-            logging.error(f"Error during evaluation for task_id {task_id}: {e}")
+            logging.error(f"Evaluation error for task {task_id}: {e}")
             try:
-                with open(samples_path, 'r') as f_err:
-                    content_err = f_err.read()
-                    logging.error(f"Content during error: {content_err.strip()}")
-            except Exception as read_err:
-                logging.error(f"Could not read samples file during error handling: {read_err}")
-            logging.error(f"Problem Dict: {problem}")
-            logging.error(f"Attempted Code:\n---\n{generated_completion}\n---")
+                logging.error("Samples content:\n" + open(samples_path).read())
+            except Exception:
+                pass
+            logging.error(f"Problem: {problem}")
+            logging.error(f"Attempted code:\n{gen}")
             return 0.0
 
 def run_pre_optimization(coder: SimpleCoder, example: dspy.Example) -> dspy.Prediction:
-    problem = example.problem
-    prompt = problem['prompt']
-    logging.info(f"Running agent before optimization for task_id: {problem.get('task_id')}")
+    prompt = example.problem["prompt"]
+    logging.info(f"Pre-optimization run for task {example.problem.get('task_id')}")
     result = coder(prompt=prompt)
-    print("```python")
-    print(prompt + result.completion)
-    print("```")
+    print_code_block(prompt + result.completion)
     score = human_eval_metric(example, result)
     logging.info(f"Score before optimization: {score}")
     return result
 
-def optimize_agent(coder: SimpleCoder, trainset: typing.List[dspy.Example], metric, max_steps: int, max_demos: int, seed: int) -> dspy.Module:
+def optimize_agent(
+    coder: SimpleCoder,
+    trainset: typing.List[dspy.Example],
+    metric,
+    max_steps: int,
+    max_demos: int,
+    seed: int,
+) -> dspy.Module:
     from dspy.teleprompt import SIMBA
+
     logging.info("Configuring SIMBA optimizer.")
     optimizer = SIMBA(metric=metric, max_steps=max_steps, max_demos=max_demos)
     logging.info(f"Starting optimization with {len(trainset)} examples.")
-    optimized_coder = optimizer.compile(coder, trainset=trainset, seed=seed)
+    optimized = optimizer.compile(coder, trainset=trainset, seed=seed)
     logging.info("Optimization finished.")
-    return optimized_coder
+    return optimized
 
-def run_post_optimization(optimized_coder: SimpleCoder, example: dspy.Example) -> None:
-    problem = example.problem
-    prompt = problem['prompt']
-    logging.info(f"Running agent after optimization for task_id: {problem.get('task_id')}")
-    result = optimized_coder(prompt=prompt)
-    print("```python")
-    print(prompt + result.completion)
-    print("```")
+def run_post_optimization(optimized: SimpleCoder, example: dspy.Example) -> None:
+    prompt = example.problem["prompt"]
+    logging.info(f"Post-optimization run for task {example.problem.get('task_id')}")
+    result = optimized(prompt=prompt)
+    print_code_block(prompt + result.completion)
     score = human_eval_metric(example, result)
     logging.info(f"Score after optimization: {score}")
 
@@ -152,12 +164,12 @@ def main() -> None:
     coder = SimpleCoder()
 
     if devset:
-        example = devset[0]
-        run_pre_optimization(coder, example)
+        ex = devset[0]
+        run_pre_optimization(coder, ex)
         try:
-            optimized = optimize_agent(coder, devset, human_eval_metric, max_steps=5, max_demos=1, seed=42)
-            run_post_optimization(optimized, example)
+            opt = optimize_agent(coder, devset, human_eval_metric, max_steps=5, max_demos=1, seed=42)
+            run_post_optimization(opt, ex)
         except Exception as e:
             logging.error(f"Error during optimization: {e}")
     else:
-        logging.warning("Development set is empty, skipping runs.")
+        logging.warning("Devset empty, skipping runs.")
