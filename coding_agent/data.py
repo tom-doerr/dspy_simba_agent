@@ -15,7 +15,7 @@ def load_human_eval_dataset() -> typing.List[dict]:
         # The check below is no longer needed as load_dataset(split='test') either
         # returns the list for the 'test' split or raises an error if the split doesn't exist.
         return list(human_eval_ds) # Ensure it's a list
-    except Exception as e:
+    except Exception:
         logging.exception("Failed to load HumanEval dataset.")
         logging.error("Please ensure 'datasets' library is installed and you have network access.")
         raise

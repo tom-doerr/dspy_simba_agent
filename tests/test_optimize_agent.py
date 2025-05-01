@@ -18,6 +18,9 @@ def test_optimize_agent(monkeypatch):
     coder = object()
     trainset = [1,2,3]
     # Use imported function directly, pass metric positionally (as a callable), add timeout
-    dummy_metric = lambda gold, pred, trace=None: 0.5 # Dummy metric function
+
+    def dummy_metric(gold, pred, trace=None):
+        return 0.5
+
     optimized = optimize_agent(coder, trainset, dummy_metric, max_steps=2, max_demos=3, seed=99, timeout=10)
     assert optimized == "OPTIMIZED"

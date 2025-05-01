@@ -1,5 +1,4 @@
 import coding_agent.main_logic as ca_main # Use alias for clarity
-from coding_agent.model import SimpleCoder # Need this for type hints if we were more strict
 
 def test_main_load_failure(monkeypatch):
     # configure_lm will throw -> main should catch and return quietly

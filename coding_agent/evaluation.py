@@ -1,10 +1,6 @@
 import logging
-import os
-import tempfile
-import typing
 import dspy
 
-from human_eval.data import HUMAN_EVAL, write_jsonl
 from human_eval.execution import check_correctness
 
 
