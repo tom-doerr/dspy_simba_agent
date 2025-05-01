@@ -151,16 +151,20 @@ def run_post_optimization(optimized: SimpleCoder, example: dspy.Example) -> None
     score = human_eval_metric(example, result)
     logging.info(f"Score after optimization: {score}")
 
-def main() -> None:
+def main(
+    lm_name: str = "deepseek/deepseek-chat",
+    optimization_subset_size: int = 32,
+    timeout: int = 10
+) -> None:
     configure_logging()
     try:
-        configure_lm("deepseek/deepseek-chat")
+        configure_lm(lm_name)
         problems = load_human_eval_dataset()
     except Exception:
         return
 
     dataset = prepare_dspy_dataset(problems)
-    devset = get_devset(dataset, optimization_subset_size=32)
+    devset = get_devset(dataset, optimization_subset_size)
     coder = SimpleCoder()
 
     if devset:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 from coding_agent import main, __version__
 
 def main_cli():
@@ -16,11 +17,33 @@ def main_cli():
         version=__version__,
         help="Show program version and exit."
     )
+    parser.add_argument(
+        "--lm-name",
+        dest="lm_name",
+        default="deepseek/deepseek-chat",
+        help="Name of the LM to use."
+    )
+    parser.add_argument(
+        "--subset-size",
+        dest="subset_size",
+        type=int,
+        default=32,
+        help="Number of examples to use for optimization subset."
+    )
+    parser.add_argument(
+        "--timeout",
+        dest="timeout",
+        type=int,
+        default=10,
+        help="Timeout in seconds for functional evaluation."
+    )
     args = parser.parse_args()
+
     if args.dry_run:
         print("Dry run mode: skipping dataset loading and optimization")
-        return
-    main()
+        sys.exit(0)
+
+    main(args.lm_name, args.subset_size, args.timeout)
 
 if __name__ == "__main__":
     main_cli()
