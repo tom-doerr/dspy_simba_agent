@@ -1,4 +1,5 @@
 import coding_agent as ca
+import coding_agent.optimization as ca_opt
 
 class DummyPrediction:
     def __init__(self, completion):
@@ -17,12 +18,13 @@ class DummyExample:
         self.problem = {'prompt': 'PP', 'task_id': 'T' }
 
 def test_run_pre_optimization(capsys, monkeypatch):
-    # stub human_eval_metric
-    monkeypatch.setattr(ca, "human_eval_metric", lambda g, p: 0.3)
+    # Mock human_eval_metric within the optimization module namespace
+    monkeypatch.setattr(ca_opt, "human_eval_metric", lambda gold, pred, trace=None, timeout=10: 0.3)
     coder = DummyCoder()
     example = DummyExample()
 
-    result = ca.run_pre_optimization(coder, example)
+    # Pass timeout
+    result = ca.run_pre_optimization(coder, example, timeout=10)
     out = capsys.readouterr().out
     assert "```python" in out
     # printed prompt + completion
@@ -32,13 +34,14 @@ def test_run_pre_optimization(capsys, monkeypatch):
     assert coder.forward_called
 
 def test_run_post_optimization(capsys, monkeypatch):
-    # stub human_eval_metric
-    monkeypatch.setattr(ca, "human_eval_metric", lambda g, p: 0.7)
+    # Mock human_eval_metric within the optimization module namespace
+    monkeypatch.setattr(ca_opt, "human_eval_metric", lambda gold, pred, trace=None, timeout=10: 0.7)
     coder = DummyCoder()
     example = DummyExample()
 
     # should not return anything, only print
-    ret = ca.run_post_optimization(coder, example)
+    # Pass timeout
+    ret = ca.run_post_optimization(coder, example, timeout=10)
     out = capsys.readouterr().out
     assert ret is None
     assert "```python" in out

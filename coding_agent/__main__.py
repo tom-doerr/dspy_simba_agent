@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-import coding_agent
+import coding_agent # Keep for version
+# Import the refactored main function
+from .main_logic import main
 
 def main_cli():
     parser = argparse.ArgumentParser(prog="coding-agent")
@@ -43,7 +45,8 @@ def main_cli():
         print("Dry run mode: skipping dataset loading and optimization")
         sys.exit(0)
 
-    coding_agent.main(args.lm_name, args.subset_size, args.timeout)
+    # Call the main function from main_logic
+    main(lm_name=args.lm_name, optimization_subset_size=args.subset_size, timeout=args.timeout)
 
 if __name__ == "__main__":
     main_cli()
