@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-from coding_agent import main, __version__
+import coding_agent
 
 def main_cli():
     parser = argparse.ArgumentParser(prog="coding-agent")
@@ -14,7 +14,7 @@ def main_cli():
     parser.add_argument(
         "--version",
         action="version",
-        version=__version__,
+        version=coding_agent.__version__,
         help="Show program version and exit."
     )
     parser.add_argument(
@@ -43,7 +43,7 @@ def main_cli():
         print("Dry run mode: skipping dataset loading and optimization")
         sys.exit(0)
 
-    main(args.lm_name, args.subset_size, args.timeout)
+    coding_agent.main(args.lm_name, args.subset_size, args.timeout)
 
 if __name__ == "__main__":
     main_cli()
