@@ -19,7 +19,7 @@ pytest = "^8.0.0"
 pytest-asyncio = "^0.24.0"
 
 [tool.poetry.scripts]
-coding-agent = "coding_agent.__main__:main_cli"
+coding-agent = "coding_agent.interactive:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
