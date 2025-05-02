@@ -1,5 +1,5 @@
 import dspy
-import coding_agent as ca
+from coding_agent.data import prepare_dspy_dataset, get_devset
 
 class DummyExample:
     def __init__(self, prompt, problem):
@@ -23,7 +23,7 @@ def test_prepare_dspy_dataset(monkeypatch):
         return DummyExample(prompt, problem)
     monkeypatch.setattr(dspy, "Example", fake_Example)
 
-    ds = ca.prepare_dspy_dataset(problems)
+    ds = prepare_dspy_dataset(problems)
     assert len(ds) == 2
     for idx, ex in enumerate(ds):
         assert isinstance(ex, DummyExample)
@@ -35,10 +35,10 @@ def test_prepare_dspy_dataset(monkeypatch):
 def test_get_devset_smaller_than_subset():
     data = list(range(3))
     # subset size is 5, data len=3
-    dev = ca.get_devset(data, optimization_subset_size=5)
+    dev = get_devset(data, optimization_subset_size=5)
     assert dev is data  # returns original list
 
 def test_get_devset_equal_or_larger_than_subset():
     data = list(range(10))
-    dev = ca.get_devset(data, optimization_subset_size=4)
+    dev = get_devset(data, optimization_subset_size=4)
     assert dev == data[:4]

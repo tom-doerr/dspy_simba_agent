@@ -38,12 +38,12 @@ def optimize_agent(
     metric_with_timeout = functools.partial(eval_metric, timeout=timeout)
 
     # Configure the SIMBA optimizer
-    # Set bsize to the actual trainset size to handle small subsets
     optimizer = SIMBA(
         metric=metric_with_timeout,
         max_steps=max_steps,
         max_demos=max_demos,
-        bsize=len(trainset) # Explicitly set batch size
+        # bsize=len(trainset) # Explicitly set batch size - causes high memory usage
+        bsize=16 # Use a smaller fixed batch size
     )
 
     logging.info(f"Starting SIMBA optimization with {len(trainset)} examples...")

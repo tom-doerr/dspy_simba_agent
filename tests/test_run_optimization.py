@@ -1,48 +1,66 @@
-import coding_agent as ca
-import coding_agent.optimization as ca_opt
+import pytest
+from unittest.mock import patch, MagicMock
+import dspy
+import coding_agent.optimization as ca_opt # Use alias for clarity
+import logging # Import logging
 
-class DummyPrediction:
-    def __init__(self, completion):
-        self.completion = completion
-
+# Dummy classes for testing
 class DummyCoder:
     def __init__(self):
         self.forward_called = False
-
     def __call__(self, prompt):
         self.forward_called = True
-        return DummyPrediction("XYZ")
+        return MagicMock(completion="XYZ") # Return a mock with completion
 
 class DummyExample:
     def __init__(self):
-        self.problem = {'prompt': 'PP', 'task_id': 'T' }
+        self.problem = {'task_id': 'dummy_task', 'prompt': 'dummy prompt'}
 
-def test_run_pre_optimization(capsys, monkeypatch):
-    # Mock human_eval_metric within the optimization module namespace
-    monkeypatch.setattr(ca_opt, "human_eval_metric", lambda gold, pred, trace=None, timeout=10: 0.3)
+# Test functions
+
+def test_run_pre_optimization(capsys, caplog, monkeypatch): # Add caplog
+    # Mock check_correctness within the optimization module namespace
+    monkeypatch.setattr(ca_opt, "check_correctness", lambda problem, completion, timeout=10: {'passed': True})
     coder = DummyCoder()
     example = DummyExample()
+    caplog.set_level(logging.INFO) # Set log level for capture
 
     # Pass timeout
-    result = ca.run_pre_optimization(coder, example, timeout=10)
-    out = capsys.readouterr().out
-    assert "```python" in out
-    # printed prompt + completion
-    assert "PPXYZ" in out
-    # result is the prediction
-    assert hasattr(result, "completion") and result.completion == "XYZ"
+    result = ca_opt.run_pre_optimization(coder, example, timeout=10)
+    out = capsys.readouterr().out # Capture stdout/stderr
+    log_text = caplog.text # Capture log messages
+
+    # Check print output via capsys
+    assert " 1 " in out
+    assert "XYZ" in out # Check for the completion content
+
+    # Check logging output via caplog
+    assert "Pre-optimization run for task dummy_task" in log_text
+    assert "Pre-optimization evaluation result: PASSED" in log_text
+
+    # Check return value and other side effects
+    assert result.completion == "XYZ" # Check the returned result
     assert coder.forward_called
 
-def test_run_post_optimization(capsys, monkeypatch):
-    # Mock human_eval_metric within the optimization module namespace
-    monkeypatch.setattr(ca_opt, "human_eval_metric", lambda gold, pred, trace=None, timeout=10: 0.7)
+def test_run_post_optimization(capsys, caplog, monkeypatch): # Add caplog
+    # Mock check_correctness within the optimization module namespace
+    monkeypatch.setattr(ca_opt, "check_correctness", lambda problem, completion, timeout=10: {'passed': False})
     coder = DummyCoder()
     example = DummyExample()
+    caplog.set_level(logging.INFO) # Set log level for capture
 
     # should not return anything, only print
     # Pass timeout
-    ret = ca.run_post_optimization(coder, example, timeout=10)
-    out = capsys.readouterr().out
+    ret = ca_opt.run_post_optimization(coder, example, timeout=10)
+    out = capsys.readouterr().out # Capture stdout/stderr
+    log_text = caplog.text # Capture log messages
+
     assert ret is None
-    assert "```python" in out
-    assert "PPXYZ" in out
+    # Check print output via capsys
+    assert " 1 " in out
+    assert "XYZ" in out # Check for the completion content
+
+    # Check logging output via caplog
+    assert "Post-optimization run for task dummy_task" in log_text
+    assert "Post-optimization evaluation result: FAILED" in log_text
+    assert coder.forward_called # Ensure coder was called

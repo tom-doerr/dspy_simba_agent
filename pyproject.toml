@@ -1,26 +1,33 @@
-[tool.poetry]
+[project]
 name = "dspy-simba-agent"
 version = "0.1.0"
 description = "DSPy SIMBA Coding Agent"
-authors = ["Your Name <you@example.com>"]
-license = "MIT"
-packages = [
-  { include = "coding_agent" }
+authors = [
+    { name = "Your Name", email = "you@example.com" },
+]
+license = { text = "MIT" }
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "dspy>=2.5.0",
+    "datasets",
+    "human-eval",
+    "rich",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.8"
-dspy = "*"
-datasets = "*"
-human-eval = "*"
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
 
-[tool.poetry.dev-dependencies]
-pytest = "^8.0.0"
-pytest-asyncio = "^0.24.0"
-
-[tool.poetry.scripts]
+[project.scripts]
 coding-agent = "coding_agent.interactive:main"
 
+# Add setuptools config to find the package
+[tool.setuptools.packages.find]
+where = ["."]  # Look in the root directory
+# include = ["coding_agent*"] # Can be more specific if needed
+
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
